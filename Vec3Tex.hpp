@@ -15,6 +15,54 @@
 class Vec3Tex
 {
 public:
+    Vec3Tex() = default;
+    Vec3Tex(const Vec3& v, const Vec2& textureCoords):
+        v(v),
+        textureCoords(textureCoords)
+    {
+    }
+    Vec3Tex& operator=(const Vec3Tex& rhs)
+    {
+        v = rhs.v;
+        textureCoords = rhs.textureCoords;
+        return *this;
+    }
+    Vec3Tex operator+(const Vec3Tex& rhs) const
+    {
+        return Vec3Tex(v + rhs.v, textureCoords + rhs.textureCoords);
+    }
+    Vec3Tex& operator+=(const Vec3Tex& rhs)
+    {
+        *this = *this + rhs;
+        return *this;
+    }
+    Vec3Tex operator-(const Vec3Tex& rhs) const
+    {
+        return Vec3Tex(v - rhs.v, textureCoords - rhs.textureCoords);
+    }
+    Vec3Tex& operator-=(const Vec3Tex& rhs)
+    {
+        *this = *this - rhs;
+        return *this;
+    }
+    Vec3Tex operator*(float rhs) const
+    {
+        return Vec3Tex(v * rhs, textureCoords * rhs);
+    }
+    Vec3Tex& operator*=(float rhs)
+    {
+        *this = *this * rhs;
+        return *this;
+    }
+    Vec3Tex operator/(float rhs) const
+    {
+        return Vec3Tex(v / rhs, textureCoords / rhs);
+    }
+    Vec3Tex& operator/=(float rhs)
+    {
+        *this = *this / rhs;
+        return *this;
+    }
     Vec3Tex InterpTo(const Vec3Tex& rhs, float percent) const
     {
         return { v.InterpTo(rhs.v, percent),

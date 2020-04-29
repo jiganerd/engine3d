@@ -238,60 +238,55 @@ void Graphics::DrawTriangleTex(const Vec3Tex& v1, const Vec3Tex& v2, const Vec3T
     }
 }
 
+//   v1 *-------* v2
+//       \     /
+//        \   /
+//         \ /
+//          * v3
 void Graphics::DrawFlatTopTriangle(const Vec2& v1, const Vec2& v2, const Vec2& v3, const Color& c)
 {
-    // calculate *inverse slopes to avoid division by zero problems in the case of any vertical lines
-    float invSlopeLeft = (v3.x - v1.x) / (v3.y - v1.y);
-    float invSlopeRight = (v3.x - v2.x) / (v3.y - v2.y);
+    // for both the left side and right side of the triangle, calculate the (floating point) step
+    // in the x direction that should be taken for each y scanline step
+    float triangleHeight = v3.y - v1.y;
+    float stepPerYLeft = (v3.x - v1.x) / triangleHeight;
+    float stepPerYRight = (v3.x - v2.x) / triangleHeight;
     
-    int yStart = Rast(v1.y);
-    int yEnd = Rast(v3.y);
-    
-    // *rough* initial values for starting/ending x, but...
-    float xStart = v1.x;
-    float xEnd = v2.x;
-    
-    // this logic may not be intuitive - we need to "bump" the x start and end values a bit:
-    // we actually should be calculating the x values based on the y value for the *vertical center*
-    // of the first row of pixels (not the upper edge)
-    float yOffsetForFirstRow = static_cast<float>(yStart) + 0.5f - v1.y;
-    xStart += yOffsetForFirstRow * invSlopeLeft;
-    xEnd   += yOffsetForFirstRow * invSlopeRight;
-    
-    for (int y = yStart; y < yEnd; y++)
-    {
-        int xStartI = Rast(xStart);
-        int xEndI = Rast(xEnd);
-        
-        for (int x = xStartI; x < xEndI; x++)
-        {
-            PutPixel(x, y, c);
-        }
-        
-        xStart += invSlopeLeft;
-        xEnd += invSlopeRight;
-    }
+    DrawFlatTriangle(v1, v2, v3, stepPerYLeft, stepPerYRight, v2, c);
 }
 
+//          * v1
+//         / \
+//        /   \
+//       /     \
+//   v2 *-------* v3
 void Graphics::DrawFlatBottomTriangle(const Vec2& v1, const Vec2& v2, const Vec2& v3, const Color& c)
 {
-    // calculate *inverse slopes to avoid division by zero problems in the case of any vertical lines
-    float invSlopeLeft = (v2.x - v1.x) / (v2.y - v1.y);
-    float invSlopeRight = (v3.x - v1.x) / (v3.y - v1.y);
+    // for both the left side and right side of the triangle, calculate the (floating point) step
+    // in the x direction that should be taken for each y scanline step
+    float triangleHeight = v3.y - v1.y;
+    float stepPerYLeft = (v2.x - v1.x) / triangleHeight;
+    float stepPerYRight = (v3.x - v1.x) / triangleHeight;
     
+    DrawFlatTriangle(v1, v2, v3, stepPerYLeft, stepPerYRight, v1, c);
+}
+
+void Graphics::DrawFlatTriangle(const Vec2& v1, const Vec2& v2, const Vec2& v3,
+                                float xStepPerYLeft, float xStepPerYRight, const Vec2& upperRightV,
+                                const Color& c)
+{
     int yStart = Rast(v1.y);
     int yEnd = Rast(v3.y);
     
     // *rough* initial values for starting/ending x, but...
     float xStart = v1.x;
-    float xEnd = v1.x;
+    float xEnd = upperRightV.x;
     
     // this logic may not be intuitive - we need to "bump" the x start and end values a bit:
     // we actually should be calculating the x values based on the y value for the *vertical center*
     // of the first row of pixels (not the upper edge)
     float yOffsetForFirstRow = static_cast<float>(yStart) + 0.5f - v1.y;
-    xStart += yOffsetForFirstRow * invSlopeLeft;
-    xEnd   += yOffsetForFirstRow * invSlopeRight;
+    xStart += yOffsetForFirstRow * xStepPerYLeft;
+    xEnd   += yOffsetForFirstRow * xStepPerYRight;
     
     for (int y = yStart; y < yEnd; y++)
     {
@@ -303,129 +298,83 @@ void Graphics::DrawFlatBottomTriangle(const Vec2& v1, const Vec2& v2, const Vec2
             PutPixel(x, y, c);
         }
         
-        xStart += invSlopeLeft;
-        xEnd += invSlopeRight;
+        xStart += xStepPerYLeft;
+        xEnd += xStepPerYRight;
     }
 }
 
+//   v1 *-------* v2
+//       \     /
+//        \   /
+//         \ /
+//          * v3
 void Graphics::DrawFlatTopTriangleTex(const Vec3Tex& v1, const Vec3Tex& v2, const Vec3Tex& v3, const Surface& tex)
 {
-    // calculate *inverse slopes to avoid division by zero problems in the case of any vertical lines
-    float invSlopeLeft = (v3.v.x - v1.v.x) / (v3.v.y - v1.v.y);
-    float invSlopeRight = (v3.v.x - v2.v.x) / (v3.v.y - v2.v.y);
-    
-    int yStart = Rast(v1.v.y);
-    int yEnd = Rast(v3.v.y);
-    
-    // *rough* initial values for starting/ending x, but...
-    float xStart = v1.v.x;
-    float xEnd = v2.v.x;
-    
-    // this logic may not be intuitive - we need to "bump" the x start and end values a bit:
-    // we actually should be calculating the x values based on the y value for the *vertical center*
-    // of the first row of pixels (not the upper edge)
-    float yOffsetForFirstRow = static_cast<float>(yStart) + 0.5f - v1.v.y;
-    xStart += yOffsetForFirstRow * invSlopeLeft;
-    xEnd   += yOffsetForFirstRow * invSlopeRight;
-    
-    // texture coordinates and steps per y scanline increment for the left and rights sides of the triangle
-    Vec2 texStepPerYLeft = (v3.textureCoords - v1.textureCoords) / (v3.v.y - v1.v.y);
-    Vec2 texStepPerYRight = (v3.textureCoords - v2.textureCoords) / (v3.v.y - v2.v.y);
+    // for both the left side and right side of the triangle, calculate the (floating point) step
+    // in the x direction and the (2-dimensional floating point) step in the texture map lookup that
+    // should be taken for each y scanline step
+    float triangleHeight = v3.v.y - v1.v.y;
+    Vec3Tex stepPerYLeft = (v3 - v1) / triangleHeight;
+    Vec3Tex stepPerYRight = (v3 - v2) / triangleHeight;
 
-    // *rough* initial values for starting/ending texture coordinates, but...
-    Vec2 textureCoordsLeft = v1.textureCoords;
-    Vec2 textureCoordsRight = v2.textureCoords;
-    
-    // similar to above, we will "bump" the texture starting coordinates a bit based on
-    // the vertical center of the first scanline
-    textureCoordsLeft  += texStepPerYLeft * yOffsetForFirstRow;
-    textureCoordsRight += texStepPerYRight * yOffsetForFirstRow;
-    
-    Vec2 textureCoords;
-    Vec2 textureCoordsStepPerX;
-    
-    for (int y = yStart; y < yEnd; y++)
-    {
-        int xStartI = Rast(xStart);
-        int xEndI = Rast(xEnd);
-        
-        textureCoordsStepPerX = (textureCoordsRight - textureCoordsLeft) / (xEnd - xStart);
-
-        // *rough* initial values for starting x, but...
-        textureCoords = textureCoordsLeft;
-
-        // similar to above, we will "bump" the texture starting coordinates a bit based on
-        // the horizontal center of the first column
-        textureCoords += textureCoordsStepPerX * (static_cast<float>(xStartI) + 0.5f - xStart);
-
-        for (int x = xStartI; x < xEndI; x++)
-        {
-            // clamp to UV coordinates in case of floating point errors
-            Utils::Clamp(textureCoords.x, 0.0f, 1.0f);
-            Utils::Clamp(textureCoords.y, 0.0f, 1.0f);
-
-            PutPixel(x, y, tex.GetPixelUV(textureCoords.x, textureCoords.y));
-            
-            textureCoords += textureCoordsStepPerX;
-        }
-        
-        xStart += invSlopeLeft;
-        xEnd += invSlopeRight;
-        
-        textureCoordsLeft += texStepPerYLeft;
-        textureCoordsRight += texStepPerYRight;
-    }
+    DrawFlatTriangleTex(v1, v2, v3, stepPerYLeft, stepPerYRight, v2, tex);
 }
 
+//          * v1
+//         / \
+//        /   \
+//       /     \
+//   v2 *-------* v3
 void Graphics::DrawFlatBottomTriangleTex(const Vec3Tex& v1, const Vec3Tex& v2, const Vec3Tex& v3, const Surface& tex)
 {
-    // calculate *inverse slopes to avoid division by zero problems in the case of any vertical lines
-    float invSlopeLeft = (v2.v.x - v1.v.x) / (v2.v.y - v1.v.y);
-    float invSlopeRight = (v3.v.x - v1.v.x) / (v3.v.y - v1.v.y);
+    // for both the left side and right side of the triangle, calculate the (floating point) step
+    // in the x direction and the (2-dimensional floating point) step in the texture map lookup that
+    // should be taken for each y scanline step
+    float triangleHeight = v3.v.y - v1.v.y;
+    Vec3Tex stepPerYLeft = (v2 - v1) / triangleHeight;
+    Vec3Tex stepPerYRight = (v3 - v1) / triangleHeight;
     
+    DrawFlatTriangleTex(v1, v2, v3, stepPerYLeft, stepPerYRight, v1, tex);
+}
+
+void Graphics::DrawFlatTriangleTex(const Vec3Tex& v1, const Vec3Tex& v2, const Vec3Tex& v3,
+                                   const Vec3Tex& stepPerYLeft, const Vec3Tex& stepPerYRight, const Vec3Tex& upperRightV,
+                                   const Surface& tex)
+{
+    // quantize the beginning (inclusive) and end (non-inclusive) y values for the top and bottom of
+    // the triangle, following our rasterization rules
     int yStart = Rast(v1.v.y);
     int yEnd = Rast(v3.v.y);
     
     // *rough* initial values for starting/ending x, but...
-    float xStart = v1.v.x;
-    float xEnd = v1.v.x;
+    Vec3Tex xStart = v1; // (same for either flat top triangle or flat bottom triangle)
+    Vec3Tex xEnd = upperRightV;
     
     // this logic may not be intuitive - we need to "bump" the x start and end values a bit:
     // we actually should be calculating the x values based on the y value for the *vertical center*
     // of the first row of pixels (not the upper edge)
     float yOffsetForFirstRow = static_cast<float>(yStart) + 0.5f - v1.v.y;
-    xStart += yOffsetForFirstRow * invSlopeLeft;
-    xEnd   += yOffsetForFirstRow * invSlopeRight;
-    
-    // texture coordinates and steps per y scanline increment for the left and rights sides of the triangle
-    Vec2 texStepPerYLeft = (v2.textureCoords - v1.textureCoords) / (v2.v.y - v1.v.y);
-    Vec2 texStepPerYRight = (v3.textureCoords - v1.textureCoords) / (v3.v.y - v1.v.y);
-    
-    // *rough* initial values for starting/ending texture coordinates, but...
-    Vec2 textureCoordsLeft = v1.textureCoords;
-    Vec2 textureCoordsRight = v1.textureCoords;
-    
-    // similar to above, we will "bump" the texture starting coordinates a bit based on
-    // the vertical center of the first scanline
-    textureCoordsLeft  += texStepPerYLeft * yOffsetForFirstRow;
-    textureCoordsRight += texStepPerYRight * yOffsetForFirstRow;
+    xStart += stepPerYLeft * yOffsetForFirstRow;
+    xEnd += stepPerYRight * yOffsetForFirstRow;
     
     Vec2 textureCoords;
     Vec2 textureCoordsStepPerX;
-
+    
     for (int y = yStart; y < yEnd; y++)
     {
-        int xStartI = Rast(xStart);
-        int xEndI = Rast(xEnd);
+        // quantize the beginning (inclusive) and end (non-inclusive) x values for the left and right of
+        // the triangle, following our rasterization rules
+        int xStartI = Rast(xStart.v.x);
+        int xEndI = Rast(xEnd.v.x);
         
-        textureCoordsStepPerX = (textureCoordsRight - textureCoordsLeft) / (xEnd - xStart);
+        textureCoordsStepPerX = (xEnd.textureCoords - xStart.textureCoords) / (xEnd.v.x - xStart.v.x);
         
         // *rough* initial values for starting x, but...
-        textureCoords = textureCoordsLeft;
+        textureCoords = xStart.textureCoords;
         
         // similar to above, we will "bump" the texture starting coordinates a bit based on
         // the horizontal center of the first column
-        textureCoords += textureCoordsStepPerX * (static_cast<float>(xStartI) + 0.5f - xStart);
+        textureCoords += textureCoordsStepPerX * (static_cast<float>(xStartI) + 0.5f - xStart.v.x);
         
         for (int x = xStartI; x < xEndI; x++)
         {
@@ -438,11 +387,8 @@ void Graphics::DrawFlatBottomTriangleTex(const Vec3Tex& v1, const Vec3Tex& v2, c
             textureCoords += textureCoordsStepPerX;
         }
         
-        xStart += invSlopeLeft;
-        xEnd += invSlopeRight;
-        
-        textureCoordsLeft += texStepPerYLeft;
-        textureCoordsRight += texStepPerYRight;
+        xStart += stepPerYLeft;
+        xEnd += stepPerYRight;
     }
 }
 
