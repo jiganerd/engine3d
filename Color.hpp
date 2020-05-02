@@ -14,7 +14,7 @@ class Color
 public:
     constexpr Color(unsigned char r, unsigned char g, unsigned char b):
         argb(0x00000000 |
-            static_cast<unsigned int>(r << 16) |
+             static_cast<unsigned int>(r << 16) |
              static_cast<unsigned int>(g << 8) |
              static_cast<unsigned int>(b))
     { }

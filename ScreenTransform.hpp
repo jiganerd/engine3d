@@ -18,11 +18,28 @@ class ScreenTransform
 {
 public:
     ScreenTransform() = delete;
-    static void Transform(Vec3& v)
+    
+    // this function takes a Vertex in object space (x, y, z, other attributes) and translates it
+    // into screen space, with an output as follows:
+    // - x, y coordinates as screen coordinates
+    // - z is "hacked" to actually hold 1/z!
+    // - all other attributes hold (their original value)/z - values divided by z can be linearly
+    //   interpolated while moving across screen space, e.g. for perspective-correct texture mapping
+    template <typename Vertex>
+    static void Transform(Vertex& v)
     {
-        float zInv = 1.0f/v.z;
-        v.x = (v.x * zInv + 1.0f) * HalfScreenWidth;
-        v.y = (-v.y * zInv + 1.0f) * HalfScreenHeight;
+        auto zInv = 1.0f/v.v.z;
+        
+        // divide all attributes by z
+        v *= zInv;
+        
+        // translate x and y from object space to screen space
+        v.v.x = (v.v.x + 1.0f) * HalfScreenWidth;
+        v.v.y = (-v.v.y + 1.0f) * HalfScreenHeight;
+        
+        // "hack" the z member to actually hold 1/z - this will be used later when rendering
+        // to recover attributes, such as texture u/v coordinates
+        v.v.z = zInv;
     }
     ~ScreenTransform() = delete;
     

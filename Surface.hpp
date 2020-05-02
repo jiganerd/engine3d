@@ -9,6 +9,7 @@
 #ifndef Surface_hpp
 #define Surface_hpp
 
+#include <iostream>
 #include <memory>
 #include "Color.hpp"
 
@@ -19,8 +20,7 @@ public:
         w(w),
         h(h),
         pPixelBuffer(new unsigned int[w * h])
-    {
-    }
+    {}
     Surface(Surface&) = delete;
     Surface(Surface&& s) = default;
     int Width() const { return w; };

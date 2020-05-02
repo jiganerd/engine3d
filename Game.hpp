@@ -10,8 +10,10 @@
 #define Game_hpp
 
 #include "Graphics.hpp"
-#include "ScreenTransform.hpp"
 #include "Cube.hpp"
+#include "Pipeline.hpp"
+#include "TextureEffect.hpp"
+#include "VertexColorEffect.hpp"
 
 class Game
 {
@@ -23,7 +25,8 @@ public:
 private:
     Cube c;
     Graphics g;
-    Surface s;
+    //Pipeline<VertexColorEffect> p;
+    Pipeline<TextureEffect> p;
 };
 
 #endif /* Game_hpp */

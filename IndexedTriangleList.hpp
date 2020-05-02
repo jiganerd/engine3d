@@ -22,7 +22,6 @@ struct IndexedTriangleList
 {
     std::vector<T> vertices;
     std::vector<Triangle> triangles;
-    std::vector<bool> cullTriangle;
 };
 
 #endif /* IndexedTriangleList_hpp */

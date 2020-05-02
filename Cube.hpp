@@ -12,9 +12,10 @@
 #include <vector>
 #include <cassert>
 #include "Vec3.hpp"
-#include "Vec3Tex.hpp"
 #include "IndexedLineList.hpp"
 #include "IndexedTriangleList.hpp"
+#include "TextureEffect.hpp"
+#include "VertexColorEffect.hpp"
 
 class Cube
 {
@@ -74,7 +75,19 @@ public:
         textureCoords.emplace_back(0.0f, 0.0f); // vertex 6
         textureCoords.emplace_back(1.0f, 0.0f); // vertex 7
         
+        // colors for vertices
+        colors.push_back(Colors::Red);
+        colors.push_back(Colors::Green);
+        colors.push_back(Colors::Purple);
+        colors.push_back(Colors::White);
+        colors.push_back(Colors::Cyan);
+        colors.push_back(Colors::Magenta);
+        colors.push_back(Colors::Blue);
+        colors.push_back(Colors::Yellow);
+        
+        // ensure parallel vectors are of correct length
         assert(textureCoords.size() == vertices.size());
+        assert(colors.size() == vertices.size());
     }
     IndexedLineList GetIndexedLineList()
     {
@@ -86,13 +99,21 @@ public:
         // are facing outward
         return { vertices, triangles };
     }
-    IndexedTriangleList<Vec3Tex> GetIndexedTriangleListTex()
+    IndexedTriangleList<TextureEffect::Vertex> GetIndexedTriangleListTex()
     {
-        std::vector<Vec3Tex> verticesTex;
+        std::vector<TextureEffect::Vertex> verticesTex;
         for (int i = 0; i < vertices.size(); i++)
             verticesTex.push_back({vertices[i], textureCoords[i]});
-
+        
         return { verticesTex, triangles };
+    }
+    IndexedTriangleList<VertexColorEffect::Vertex> GetIndexedTriangleListVC()
+    {
+        std::vector<VertexColorEffect::Vertex> verticesVC;
+        for (int i = 0; i < vertices.size(); i++)
+            verticesVC.push_back({vertices[i], Vec3(colors[i].R(), colors[i].G(), colors[i].B())});
+        
+        return { verticesVC, triangles };
     }
     
 private:
@@ -100,6 +121,7 @@ private:
     std::vector<Line> lines;
     std::vector<Triangle> triangles;
     std::vector<Vec2> textureCoords;
+    std::vector<Color> colors;
 };
 
 #endif /* Cube_hpp */
