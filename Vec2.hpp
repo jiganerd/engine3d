@@ -38,6 +38,10 @@ public:
         *this = *this - rhs;
         return *this;
     }
+    _Vec2& operator-() const
+    {
+        return (*this * static_cast<T>(-1));
+    }
     _Vec2 operator*(const T& rhs) const
     {
         return _Vec2(x * rhs, y * rhs);

@@ -19,11 +19,15 @@
 #include "IndexedLineList.hpp"
 #include "IndexedTriangleList.hpp"
 #include "Utils.hpp"
+#include "Triangle.hpp"
 
 template <typename Effect>
 class Pipeline
 {
     using Vertex = typename Effect::Vertex;
+    using VertexShader = typename Effect::VertexShader;
+    using VSOutVertex = typename Effect::VertexShader::OutVertex;
+    using GSOutVertex = typename Effect::GeometryShader::OutVertex;
     using PixelShader = typename Effect::PixelShader;
     
 public:
@@ -32,79 +36,50 @@ public:
     {}
     void Draw(const IndexedTriangleList<Vertex>& itl)
     {
-        const std::vector<Color> colors =
-        {
-            Colors::Red,
-            Colors::Lime,
-            Colors::Blue,
-            Colors::Yellow,
-            Colors::Cyan,
-            Colors::Magenta,
-            Colors::Silver,
-            Colors::Gray,
-            Colors::Maroon,
-            Colors::Olive,
-            Colors::Green,
-            Colors::Purple
-        };
-        
-        static float angle = 0.1;
-        angle += 0.002;
+        static float angle = 0.0f;
+        angle += 0.01;
         
         Mat3 rotMat = Mat3::RotZ(angle) * Mat3::RotX(angle*2) * Mat3::RotY(angle/2);
         Vec3 transVec(0.0f, 0.0f, 2.0f);
         
-        // translate everything in world space
-        std::vector<Vertex> transformedVertices;
-        for (auto& v : itl.vertices)
-        {
-            // put the transformed 3-dimensional vector into the new vertex while
-            // ensuring that all other properties of the vertex remain intact
-            Vertex transformedVertex = v;
-            transformedVertex.v = v.v * rotMat + transVec;
-            transformedVertices.push_back(std::move(transformedVertex));
-        }
+        effect.vertexShader.BindRotation(rotMat);
+        effect.vertexShader.BindTranslation(transVec);
+        
+        // run the vertex shader over all vertices
+        std::vector<VSOutVertex> transformedVertices;
+        for (const auto& v : itl.vertices)
+            transformedVertices.push_back(effect.vertexShader(v));
         
         // determine which triangles should be culled
-        std::vector<bool> cullTriangle;
         for (const auto& t : itl.triangles)
         {
-            const Vertex& v1 = transformedVertices[t.indices[0]];
-            const Vertex& v2 = transformedVertices[t.indices[1]];
-            const Vertex& v3 = transformedVertices[t.indices[2]];
+            const VSOutVertex& v1 = transformedVertices[t.indices[0]];
+            const VSOutVertex& v2 = transformedVertices[t.indices[1]];
+            const VSOutVertex& v3 = transformedVertices[t.indices[2]];
             
-            // calculate the "normal" (which actually isn't normalized)
-            Vec3 norm = ((v2.v - v1.v).cross(v3.v - v1.v));
+            // calculate the normal
+            Vec3 norm = ((v2.v - v1.v).cross(v3.v - v1.v)).Norm();
             
-            // cull if the "normal" is facing away from the camera - i.e. if the dot product
+            // cull if the normal is facing away from the camera - i.e. if the dot product
             // between the normal and a vector from the camera to any point on the triangle
             // (e.g. v1) is positive (or zero)
-            cullTriangle.push_back((norm * v1.v) >= 0.0f);
+            if ((norm * v1.v) < 0.0f)
+                ProcessTriangle(v1, v2, v3);
         }
+    }
+    
+private:
+    void ProcessTriangle(const VSOutVertex& v1, const VSOutVertex& v2, const VSOutVertex& v3)
+    {
+        Triangle<GSOutVertex> t = effect.geometryShader({v1, v2, v3});
         
         // translate everything into screen space
-        for (auto& v : transformedVertices)
-            ScreenTransform::Transform(v);
-        
-        // draw textured triangles
-        for (int i = 0; i < itl.triangles.size(); i++)
-        {
-            if (!cullTriangle[i])
-            {
-                const Triangle& t = itl.triangles[i];
-                DrawTriangleTex(transformedVertices[t.indices[0]],
-                                transformedVertices[t.indices[1]],
-                                transformedVertices[t.indices[2]]);
-            }
-        }
-        
-        // draw lines
-        //    for (const auto& l : ill.lines)
-        //        g.DrawLine(ill.vertices[l.indices[0]], ill.vertices[l.indices[1]], Colors::White);
-        
-    }
+        ScreenTransform::Transform(t.v1);
+        ScreenTransform::Transform(t.v2);
+        ScreenTransform::Transform(t.v3);
 
-private:
+        DrawTriangle(t.v1, t.v2, t.v3);
+    }
     // these follow triangle rasterization rules described at
     // https://docs.microsoft.com/en-us/windows/win32/direct3d11/d3d10-graphics-programming-guide-rasterizer-stage-rules
     inline static int Rast(float n) { return static_cast<int>(ceil(n - 0.5f)); }
@@ -150,12 +125,12 @@ private:
             g.PutPixel(Rast(x), Rast(y), c);
         }
     }
-    void DrawTriangleTex(const Vertex& v1, const Vertex& v2, const Vertex& v3)
+    void DrawTriangle(const GSOutVertex& v1, const GSOutVertex& v2, const GSOutVertex& v3)
     {
         // rearrange vertices such that v1 is at the top and v3 is at the bottom
-        const Vertex* pV1 = &v1;
-        const Vertex* pV2 = &v2;
-        const Vertex* pV3 = &v3;
+        const GSOutVertex* pV1 = &v1;
+        const GSOutVertex* pV2 = &v2;
+        const GSOutVertex* pV3 = &v3;
         
         if (pV2->v.y < pV1->v.y)
             std::swap(pV1, pV2);
@@ -171,28 +146,28 @@ private:
         {
             if (pV2->v.x < pV1->v.x)
                 std::swap(pV1, pV2);
-            DrawFlatTopTriangleTex(*pV1, *pV2, *pV3);
+            DrawFlatTopTriangle(*pV1, *pV2, *pV3);
         }
         else if (pV2->v.y == pV3->v.y)
         {
             if (pV3->v.x < pV2->v.x)
                 std::swap(pV2, pV3);
-            DrawFlatBottomTriangleTex(*pV1, *pV2, *pV3);
+            DrawFlatBottomTriangle(*pV1, *pV2, *pV3);
         }
         else
         {
             float heightRatio = (pV2->v.y - pV1->v.y)/(pV3->v.y - pV1->v.y);
-            Vertex vSplit = pV1->InterpTo(*pV3, heightRatio);
+            GSOutVertex vSplit = pV1->InterpTo(*pV3, heightRatio);
             
             if (vSplit.v.x < pV2->v.x)
             {
-                DrawFlatBottomTriangleTex(*pV1, vSplit, *pV2);
-                DrawFlatTopTriangleTex(vSplit, *pV2, *pV3);
+                DrawFlatBottomTriangle(*pV1, vSplit, *pV2);
+                DrawFlatTopTriangle(vSplit, *pV2, *pV3);
             }
             else
             {
-                DrawFlatBottomTriangleTex(*pV1, *pV2, vSplit);
-                DrawFlatTopTriangleTex(*pV2, vSplit, *pV3);
+                DrawFlatBottomTriangle(*pV1, *pV2, vSplit);
+                DrawFlatTopTriangle(*pV2, vSplit, *pV3);
             }
         }
     }
@@ -201,35 +176,35 @@ private:
     //        \   /
     //         \ /
     //          * v3
-    void DrawFlatTopTriangleTex(const Vertex& v1, const Vertex& v2, const Vertex& v3)
+    void DrawFlatTopTriangle(const GSOutVertex& v1, const GSOutVertex& v2, const GSOutVertex& v3)
     {
         // for both the left side and right side of the triangle, calculate the (floating point) step
         // in the x direction and the (2-dimensional floating point) step in the texture map lookup that
         // should be taken for each y scanline step
         float triangleHeight = v3.v.y - v1.v.y;
-        Vertex stepPerYLeft = (v3 - v1) / triangleHeight;
-        Vertex stepPerYRight = (v3 - v2) / triangleHeight;
+        GSOutVertex stepPerYLeft = (v3 - v1) / triangleHeight;
+        GSOutVertex stepPerYRight = (v3 - v2) / triangleHeight;
         
-        DrawFlatTriangleTex(v1, v2, v3, stepPerYLeft, stepPerYRight, v2);
+        DrawFlatTriangle(v1, v2, v3, stepPerYLeft, stepPerYRight, v2);
     }
     //          * v1
     //         / \
     //        /   \
     //       /     \
     //   v2 *-------* v3
-    void DrawFlatBottomTriangleTex(const Vertex& v1, const Vertex& v2, const Vertex& v3)
+    void DrawFlatBottomTriangle(const GSOutVertex& v1, const GSOutVertex& v2, const GSOutVertex& v3)
     {
         // for both the left side and right side of the triangle, calculate the (floating point) step
         // in the x direction and the (2-dimensional floating point) step in the texture map lookup that
         // should be taken for each y scanline step
         float triangleHeight = v3.v.y - v1.v.y;
-        Vertex stepPerYLeft = (v2 - v1) / triangleHeight;
-        Vertex stepPerYRight = (v3 - v1) / triangleHeight;
+        GSOutVertex stepPerYLeft = (v2 - v1) / triangleHeight;
+        GSOutVertex stepPerYRight = (v3 - v1) / triangleHeight;
         
-        DrawFlatTriangleTex(v1, v2, v3, stepPerYLeft, stepPerYRight, v1);
+        DrawFlatTriangle(v1, v2, v3, stepPerYLeft, stepPerYRight, v1);
     }
-    void DrawFlatTriangleTex(const Vertex& v1, const Vertex& v2, const Vertex& v3,
-                             const Vertex& stepPerYLeft, const Vertex& stepPerYRight, const Vertex& upperRightV)
+    void DrawFlatTriangle(const GSOutVertex& v1, const GSOutVertex& v2, const GSOutVertex& v3,
+                          const GSOutVertex& stepPerYLeft, const GSOutVertex& stepPerYRight, const GSOutVertex& upperRightV)
     {
         // quantize the beginning (inclusive) and end (non-inclusive) y values for the top and bottom of
         // the triangle, following our rasterization rules
@@ -237,8 +212,8 @@ private:
         int yEnd = Rast(v3.v.y);
         
         // *rough* initial values for starting/ending x, but...
-        Vertex xStartVertex = v1; // (same for either flat top triangle or flat bottom triangle)
-        Vertex xEndVertex = upperRightV;
+        GSOutVertex xStartVertex = v1; // (same for either flat top triangle or flat bottom triangle)
+        GSOutVertex xEndVertex = upperRightV;
         
         // this logic may not be intuitive - we need to "bump" the x start and end values a bit:
         // we actually should be calculating the x values based on the y value for the *vertical center*
@@ -247,8 +222,8 @@ private:
         xStartVertex += stepPerYLeft * yOffsetForFirstRow;
         xEndVertex += stepPerYRight * yOffsetForFirstRow;
         
-        Vertex currPixelVertex;
-        Vertex stepPerX;
+        GSOutVertex currPixelVertex;
+        GSOutVertex stepPerX;
         
         for (int y = yStart; y < yEnd; y++)
         {
@@ -277,7 +252,7 @@ private:
                 
                 // recover attributes of the vertex which had previously been transformed by the screen-space
                 // transformation
-                Vertex currPixelVertexRecovered = currPixelVertex / zInv;
+                GSOutVertex currPixelVertexRecovered = currPixelVertex / zInv;
                 g.PutPixel(x, y, effect.pixelShader(currPixelVertexRecovered));
                 
                 currPixelVertex += stepPerX;

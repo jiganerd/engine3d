@@ -83,6 +83,7 @@ Surface Graphics::LoadTexture(std::string filename)
             pPixelBuffer[offset++] = GetSDLSurfaceColor(*pSurf, x, y);
         }
     }
+    
     return s;
 }
 

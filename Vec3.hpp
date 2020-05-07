@@ -45,11 +45,15 @@ public:
         *this = *this - rhs;
         return *this;
     }
+    _Vec3& operator-() const
+    {
+        return (*this * static_cast<T>(-1));
+    }
     _Vec3 operator*(const T& rhs) const
     {
         return _Vec3(x * rhs, y * rhs, z * rhs);
     }
-    _Vec3& operator*=(const _Vec3& rhs)
+    _Vec3& operator*=(const T& rhs)
     {
         *this = *this * rhs;
         return *this;
@@ -63,11 +67,11 @@ public:
         *this = *this / rhs;
         return *this;
     }
-    T operator*(const _Vec3& rhs) // dot product
+    T operator*(const _Vec3& rhs) const // dot product
     {
         return (x * rhs.x + y * rhs.y + z * rhs.z);
     }
-    _Vec3 cross(const _Vec3& rhs) // cross product
+    _Vec3 cross(const _Vec3& rhs) const // cross product
     {
         return _Vec3(y * rhs.z - z * rhs.y,
              z * rhs.x - x * rhs.z,

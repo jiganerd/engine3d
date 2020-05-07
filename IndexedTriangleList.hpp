@@ -12,7 +12,7 @@
 #include <vector>
 #include "Vec3.hpp"
 
-struct Triangle
+struct IndexedTriangle
 {
     size_t indices[3];
 };
@@ -21,7 +21,7 @@ template<typename T>
 struct IndexedTriangleList
 {
     std::vector<T> vertices;
-    std::vector<Triangle> triangles;
+    std::vector<IndexedTriangle> triangles;
 };
 
 #endif /* IndexedTriangleList_hpp */

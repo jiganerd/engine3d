@@ -11,9 +11,11 @@
 
 #include "Graphics.hpp"
 #include "Cube.hpp"
+#include "Sphere.hpp"
 #include "Pipeline.hpp"
 #include "TextureEffect.hpp"
 #include "VertexColorEffect.hpp"
+#include "FlatShadingEffect.hpp"
 
 class Game
 {
@@ -24,9 +26,14 @@ public:
     
 private:
     Cube c;
+    Sphere s;
+
     Graphics g;
-    //Pipeline<VertexColorEffect> p;
-    Pipeline<TextureEffect> p;
+    
+    Pipeline<TextureEffect> pT;
+    Pipeline<VertexColorEffect> pVC;
+    Pipeline<FlatShadingEffect> pFS;
+    Pipeline<GouraudEffect> pG;
 };
 
 #endif /* Game_hpp */

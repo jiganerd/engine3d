@@ -12,7 +12,7 @@
 #include <vector>
 #include "Vec3.hpp"
 
-struct Line
+struct IndexedLine
 {
     size_t indices[2];
 };
@@ -20,7 +20,7 @@ struct Line
 struct IndexedLineList
 {
     std::vector<Vec3> vertices;
-    std::vector<Line> lines;
+    std::vector<IndexedLine> lines;
 };
 
 #endif /* IndexedLineList_hpp */

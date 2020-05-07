@@ -48,6 +48,8 @@ public:
         lines.push_back({7,6});
         
         // triangles
+        // these follow a left-hand-rule winding order such that normals
+        // are facing outward
         triangles.push_back({1,2,0}); // left panel
         triangles.push_back({3,2,1});
         triangles.push_back({4,1,0}); // bottom panel
@@ -95,15 +97,13 @@ public:
     }
     IndexedTriangleList<Vec3> GetIndexedTriangleList()
     {
-        // these follow a left-hand-rule winding order such that normals
-        // are facing outward
         return { vertices, triangles };
     }
     IndexedTriangleList<TextureEffect::Vertex> GetIndexedTriangleListTex()
     {
         std::vector<TextureEffect::Vertex> verticesTex;
         for (int i = 0; i < vertices.size(); i++)
-            verticesTex.push_back({vertices[i], textureCoords[i]});
+            verticesTex.emplace_back(vertices[i], textureCoords[i]);
         
         return { verticesTex, triangles };
     }
@@ -111,15 +111,15 @@ public:
     {
         std::vector<VertexColorEffect::Vertex> verticesVC;
         for (int i = 0; i < vertices.size(); i++)
-            verticesVC.push_back({vertices[i], Vec3(colors[i].R(), colors[i].G(), colors[i].B())});
+            verticesVC.push_back({vertices[i], colors[i].Vec()});
         
         return { verticesVC, triangles };
     }
     
 private:
     std::vector<Vec3> vertices;
-    std::vector<Line> lines;
-    std::vector<Triangle> triangles;
+    std::vector<IndexedLine> lines;
+    std::vector<IndexedTriangle> triangles;
     std::vector<Vec2> textureCoords;
     std::vector<Color> colors;
 };
