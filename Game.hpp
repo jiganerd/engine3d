@@ -10,21 +10,26 @@
 #define Game_hpp
 
 #include "Graphics.hpp"
+#include "Input.hpp"
 #include "Cube.hpp"
 #include "Sphere.hpp"
 #include "Pipeline.hpp"
 #include "TextureEffect.hpp"
 #include "VertexColorEffect.hpp"
 #include "FlatShadingEffect.hpp"
+#include "FrameRateMgr.hpp"
 
 class Game
 {
 public:
     Game();
     ~Game() = default;
-    void ComposeFrame();
+    bool ProcessFrame();
     
 private:
+    void ComposeFrame();
+    void HandleInput();
+    
     Cube c;
     Sphere s;
 
@@ -34,6 +39,13 @@ private:
     Pipeline<VertexColorEffect> pVC;
     Pipeline<FlatShadingEffect> pFS;
     Pipeline<GouraudEffect> pG;
+    
+    Input i;
+    FrameRateMgr frm;
+
+    int sceneNum = 0;    
+    float rotYAngle = 0.0f;
+    float rotXAngle = 0.0f;
 };
 
 #endif /* Game_hpp */

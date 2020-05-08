@@ -22,6 +22,16 @@ public:
     {
         n = std::max(min, std::min(n, max));
     };
+    
+    template <typename T>
+    static void NormalizeAngle(T& a)
+    {
+        constexpr T TwoPi = static_cast<T>(2) * M_PI;
+        while (a > TwoPi)
+            a -= TwoPi;
+        while (a < static_cast<T>(0))
+            a += TwoPi;
+    };
 };
 
 #endif /* Utils_hpp */

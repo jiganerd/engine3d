@@ -8,22 +8,20 @@
 
 #include <iostream>
 #include "Game.hpp"
-#include "Mat3.hpp"
-#include "Vec3.hpp"
-#include "Input.hpp"
 
 int main()
 {
     try
     {
         Game g;
+        bool quit = false;
 
-        while (!Input::HandleKeys())
+        while (!quit)
         {
-            g.ComposeFrame();
+            quit = g.ProcessFrame();
         }
     }
-    catch (const Graphics::SDLException& e)
+    catch (const Graphics::Exception& e)
     {
         std::cerr << e.GetMsg() << std::endl;
     }

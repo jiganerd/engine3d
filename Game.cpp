@@ -16,43 +16,100 @@ Game::Game():
     pFS(g),
     pG(g)
 {
+    // push objects away from the camera as clipping is not currently handled
+    Vec3 transVec(0.0f, 0.0f, 2.0f);
+    pT.effect.vertexShader.BindTranslation(transVec);
+    pVC.effect.vertexShader.BindTranslation(transVec);
+    pFS.effect.vertexShader.BindTranslation(transVec);
+    pG.effect.vertexShader.BindTranslation(transVec);
+}
+
+bool Game::ProcessFrame()
+{
+    bool quit = i.ProcessKeys();
+    
+    if (!quit)
+    {
+        HandleInput();
+        
+        g.BeginFrame();
+        ComposeFrame();
+        g.EndFrame();
+
+        frm.Mark();
+    }
+    
+    return quit;
 }
 
 void Game::ComposeFrame()
 {
-    g.BeginFrame();
-    
-    int scene = 3;
-    switch (scene)
+    switch (sceneNum)
     {
+    // textured, flat-shaded cube
     case 0:
-        {
+    {
+        IndexedTriangleList<TextureEffect::Vertex> itlct = c.GetIndexedTriangleListTex();
+        pT.Draw(itlct);
+        break;
+    }
+            
+    // vertex-colored cube
+    case 1:
+    {
         IndexedTriangleList<VertexColorEffect::Vertex> itlcvc = c.GetIndexedTriangleListVC();
         pVC.Draw(itlcvc);
         break;
-        }
+    }
             
-    case 1:
-        {
+    // flat-shaded sphere
+    case 2:
+    {
+        IndexedTriangleList<FlatShadingEffect::Vertex> itlsfs = s.GetIndexedTriangleListFS();
+        pFS.Draw(itlsfs);
+        break;
+    }
+
+    // gouraud-shaded sphere
+    case 3:
+    {
         IndexedTriangleList<GouraudEffect::Vertex> itlsg = s.GetIndexedTriangleListG();
         pG.Draw(itlsg);
         break;
-        }
-        
-    case 2:
-        {
-        IndexedTriangleList<FlatShadingEffect::Vertex> itlsfs = s.GetIndexedTriangleListFS();
-        pFS.Draw(itlsfs);
-        }
-        break;
-        
-    case 3:
-        {
-        IndexedTriangleList<TextureEffect::Vertex> itlct = c.GetIndexedTriangleListTex();
-        pT.Draw(itlct);
-        }
+    }
+            
+    default:
         break;
     }
+}
+
+void Game::HandleInput()
+{
+    // handle scene switching
     
-    g.EndFrame();
+    if (i.GetTabFirstPressed())
+        if (++sceneNum > 3)
+            sceneNum = 0;
+    
+    // handle rotation, with speed based on frame rate
+    
+    float rotSpeed = frm.GetFrameTimeSecs() * M_PI;
+        
+    if (i.GetRotateLeft() || i.GetRotateRight())
+    {
+        rotYAngle += rotSpeed * (i.GetRotateRight() ? -1.0f : 1.0f);
+        Utils::NormalizeAngle(rotYAngle);
+    }
+    
+    if (i.GetMoveForward() || i.GetMoveBackward())
+    {
+        rotXAngle += rotSpeed * (i.GetMoveBackward() ? -1.0f : 1.0f);
+        Utils::NormalizeAngle(rotXAngle);
+    }
+    
+    Mat3 rotMat = Mat3::RotY(rotYAngle) * Mat3::RotX(rotXAngle);
+    pT.effect.vertexShader.BindRotation(rotMat);
+    pVC.effect.vertexShader.BindRotation(rotMat);
+    pFS.effect.vertexShader.BindRotation(rotMat);
+    pG.effect.vertexShader.BindRotation(rotMat);
 }

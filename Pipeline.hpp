@@ -36,15 +36,6 @@ public:
     {}
     void Draw(const IndexedTriangleList<Vertex>& itl)
     {
-        static float angle = 0.0f;
-        angle += 0.01;
-        
-        Mat3 rotMat = Mat3::RotZ(angle) * Mat3::RotX(angle*2) * Mat3::RotY(angle/2);
-        Vec3 transVec(0.0f, 0.0f, 2.0f);
-        
-        effect.vertexShader.BindRotation(rotMat);
-        effect.vertexShader.BindTranslation(transVec);
-        
         // run the vertex shader over all vertices
         std::vector<VSOutVertex> transformedVertices;
         for (const auto& v : itl.vertices)
@@ -264,6 +255,8 @@ private:
     }
     
     Graphics& g;
+    
+public:
     Effect effect;
 };
 

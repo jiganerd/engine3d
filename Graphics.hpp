@@ -19,14 +19,10 @@
 class Graphics
 {
 public:
-    class SDLException
+    class Exception
     {
     public:
-        SDLException(std::string msg);
-        std::string GetMsg() const;
-    private:
-        std::string error;
-        std::string msg;
+        virtual std::string GetMsg() const = 0;
     };
     
     Graphics();
@@ -39,7 +35,17 @@ public:
     void PutPixel(int x, int y, const Color& c);
     ~Graphics();
     
-private:    
+private:
+    class SDLException : public Exception
+    {
+    public:
+        SDLException(std::string msg);
+        std::string GetMsg() const override;
+    private:
+        std::string error;
+        std::string msg;
+    };
+
     static Color GetSDLSurfaceColor(const SDL_Surface& surface, int x, int y);
 
     SDL_Window* pWindow;
