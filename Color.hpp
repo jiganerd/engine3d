@@ -35,7 +35,10 @@ public:
     }
     constexpr Color operator*(float n) const
     {
-        return Color(R()*n, G()*n, B()*n);
+        return Color(
+			static_cast<unsigned char>(R()*n), 
+			static_cast<unsigned char>(G()*n), 
+			static_cast<unsigned char>(B()*n));
     }
     Color& operator*=(float n)
     {

@@ -17,6 +17,7 @@
 #include "IndexedTriangleList.hpp"
 #include "FlatShadingEffect.hpp"
 #include "GouraudEffect.hpp"
+#include "Utils.hpp"
 
 class Sphere
 {
@@ -32,8 +33,8 @@ public:
         
         float angleLat = 0.0f;
         float angleLong = 0.0f;
-        float angleLatIncrement = M_PI / numVerticesLat;
-        float angleLongIncrement = 2.0f * M_PI / numVerticesLong;
+        float angleLatIncrement = Utils::Pi / numVerticesLat;
+        float angleLongIncrement = 2.0f * Utils::Pi / numVerticesLong;
         
         // index of the current vertex being processed - in general, "i" is used throughout
         // this function to represent an index into the vertex vector

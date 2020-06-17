@@ -11,7 +11,7 @@
 
 #include <string>
 #include <cmath>
-#include <SDL2/SDL.h>
+#include "SDLHeader.hpp"
 #include "Color.hpp"
 #include "Vec2.hpp"
 #include "Surface.hpp"

@@ -9,6 +9,7 @@
 #include "Game.hpp"
 #include "IndexedTriangleList.hpp"
 #include "TextureEffect.hpp"
+#include "Utils.hpp"
 
 Game::Game():
     pT(g),
@@ -93,7 +94,7 @@ void Game::HandleInput()
     
     // handle rotation, with speed based on frame rate
     
-    float rotSpeed = frm.GetFrameTimeSecs() * M_PI;
+    float rotSpeed = frm.GetFrameTimeSecs() * Utils::Pi;
         
     if (i.GetRotateLeft() || i.GetRotateRight())
     {

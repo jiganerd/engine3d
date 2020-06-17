@@ -23,7 +23,7 @@ public:
 
 private:
     // time it took to render the last frame, in secs
-    float frameTimeSecs = 0.100; // (something reasonable before the first frame is rendered)
+    float frameTimeSecs = 0.100f; // (something reasonable before the first frame is rendered)
     clock_t lastClockTicks;
     float secsUntilPrint = PrintEverySecs;
 };
